@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhas Finanças - Login</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="login.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>💰 Minhas Finanças</h1>
+        <p>Entenda para onde vai seu dinheiro</p>
+      </div>
+
+      <!-- Abas -->
+      <div class="login-tabs">
+        <button class="tab-btn active" id="tabLogin" onclick="mostrarAba('login')">Entrar</button>
+        <button class="tab-btn" id="tabCadastro" onclick="mostrarAba('cadastro')">Cadastrar</button>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form class="login-form" id="formLogin" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="loginSenha">Senha</label>
+          <input type="password" id="loginSenha" placeholder="Sua senha" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-submit" id="btnLogin">Entrar</button>
+      </form>
+
+      <!-- Formulário de Cadastro -->
+      <form class="login-form" id="formCadastro" onsubmit="handleCadastro(event)" style="display: none;">
+        <div class="form-group">
+          <label for="cadastroEmail">Email</label>
+          <input type="email" id="cadastroEmail" placeholder="seu@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="cadastroSenha">Senha</label>
+          <input type="password" id="cadastroSenha" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label for="cadastroSenhaConfirma">Confirmar senha</label>
+          <input type="password" id="cadastroSenhaConfirma" placeholder="Repita a senha" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn-submit" id="btnCadastro">Criar conta</button>
+      </form>
+
+      <!-- Mensagens -->
+      <div class="login-message" id="loginMessage"></div>
+    </div>
+  </div>
+
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minhas Finanças</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/auth-guard.js"></script>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-top">
+        <div>
+          <h1>💰 Minhas Finanças</h1>
+          <p class="subtitle">Entenda para onde vai seu dinheiro</p>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="Sair">Sair</button>
+      </div>
+    </header>
+
+    <!-- Upload Section -->
+    <section class="card upload-section">
+      <h2>📁 Importar Extrato</h2>
+      <p>Faça upload do CSV exportado do seu banco</p>
+      
+      <!-- Mês de referência (obrigatório) -->
+      <div class="reference-month-section">
+        <label class="required-label">📅 Mês de referência da fatura *</label>
+        <div class="month-select-row">
+          <select id="referenceMonth" required>
+            <option value="">Selecione o mês</option>
+            <option value="01">Janeiro</option>
+            <option value="02">Fevereiro</option>
+            <option value="03">Março</option>
+            <option value="04">Abril</option>
+            <option value="05">Maio</option>
+            <option value="06">Junho</option>
+            <option value="07">Julho</option>
+            <option value="08">Agosto</option>
+            <option value="09">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+          <select id="referenceYear" required>
+            <option value="">Ano</option>
+          </select>
+        </div>
+        <small class="helper-text">Informe o mês/ano de vencimento da fatura</small>
+      </div>
+      
+      <!-- Banco (obrigatório) -->
+      <div class="bank-section">
+        <label class="required-label">🏦 Banco do cartão *</label>
+        <select id="bankSelect" class="bank-combo" required>
+          <option value="">Selecione o banco</option>
+          <option value="nubank">Nubank</option>
+          <option value="c6">C6 Bank</option>
+          <option value="inter">Banco Inter</option>
+          <option value="itau">Itaú</option>
+          <option value="bradesco">Bradesco</option>
+          <option value="generic">Outro banco</option>
+        </select>
+        <small class="helper-text">Selecione o banco emissor do cartão</small>
+      </div>
+      
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept=".csv" hidden>
+        <div class="upload-content">
+          <span class="upload-icon">📄</span>
+          <p>Arraste o arquivo CSV aqui ou <button class="btn-link" onclick="document.getElementById('fileInput').click()">clique para selecionar</button></p>
+          <small>Após selecionar o banco acima, importe o arquivo CSV da fatura</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filtro de Período (aparece após importação) -->
+    <section class="period-filter-section" id="periodFilterSection" style="display: none;">
+      <div class="period-filter-card">
+        <div class="period-filter-label">
+          <span class="period-icon">📅</span>
+          <span>Período de análise:</span>
+        </div>
+        <div class="period-filter-controls">
+          <select id="periodFilter" class="period-select">
+            <option value="">Todos os meses</option>
+          </select>
+          <div class="period-summary" id="periodSummaryInfo"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Cards -->
+    <section class="summary-section" id="summarySection" style="display: none;">
+      <div class="summary-card expense">
+        <span class="summary-icon">�</span>
+        <div>
+          <p class="summary-label">Total da Fatura</p>
+          <p class="summary-value" id="totalExpense">R$ 0,00</p>
+        </div>
+      </div>
+      <div class="summary-card transactions-count">
+        <span class="summary-icon">�</span>
+        <div>
+          <p class="summary-label">Transações</p>
+          <p class="summary-value" id="totalTransactions">0</p>
+        </div>
+      </div>
+      <div class="summary-card categories-count">
+        <span class="summary-icon">🏷️</span>
+        <div>
+          <p class="summary-label">Categorias</p>
+          <p class="summary-value" id="totalCategories">0</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Resumo por Banco/Mês -->
+    <section class="card" id="bankSummarySection" style="display: none;">
+      <h3>🏦 Resumo por Banco e Fatura</h3>
+      <div class="bank-summary-list" id="bankSummaryList"></div>
+    </section>
+
+    <!-- Consultor Financeiro IA -->
+    <section class="card consultor-section recolhido" id="consultorSection" style="display: none;">
+      <div class="consultor-header">
+        <div class="consultor-title consultor-toggle" onclick="toggleConsultor()">
+          <span class="consultor-icon">🤖</span>
+          <div>
+            <h3>Consultor Financeiro IA</h3>
+            <p class="consultor-subtitle">Análise inteligente dos seus gastos</p>
+          </div>
+          <span class="consultor-chevron" id="consultorChevron">▾</span>
+        </div>
+        <button class="btn btn-primary btn-analyze" id="btnAnalyze" onclick="analyzeWithAI()">
+          <span class="btn-icon">✨</span> Analisar gastos
+        </button>
+      </div>
+
+      <div class="consultor-body" id="consultorBody">
+        <div class="consultor-content" id="consultorContent">
+          <div class="consultor-placeholder">
+            <p>Clique em <strong>"Analisar gastos"</strong> para receber insights personalizados sobre suas finanças.</p>
+            <ul class="consultor-features">
+              <li>📊 Análise de padrões de consumo</li>
+              <li>💡 Sugestões de economia</li>
+              <li>📈 Comparativo entre períodos</li>
+              <li>⚠️ Alertas de gastos elevados</li>
+              <li>🎯 Dicas para atingir metas</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section class="charts-section" id="chartsSection" style="display: none;">
+      <div class="card chart-card">
+        <h3>🍕 Gastos por Categoria</h3>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+      <div class="card chart-card">
+        <h3>📊 Evolução Diária</h3>
+        <div class="chart-container">
+          <canvas id="dailyChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top Expenses -->
+    <section class="card" id="topExpensesSection" style="display: none;">
+      <h3>🔥 Maiores Gastos</h3>
+      <div class="top-expenses-list" id="topExpensesList"></div>
+    </section>
+
+    <!-- Gastos por Estabelecimento (agrupado) -->
+    <section class="card" id="groupedExpensesSection" style="display: none;">
+      <div class="section-header">
+        <h3>🏪 Gastos por Estabelecimento</h3>
+        <small class="grouped-subtitle">Transações agrupadas pelo mesmo estabelecimento</small>
+      </div>
+      <div class="grouped-expenses-list" id="groupedExpensesList"></div>
+    </section>
+
+    <!-- Transactions Table -->
+    <section class="card" id="transactionsSection" style="display: none;">
+      <div class="section-header">
+        <h3>📋 Transações</h3>
+        <div class="filters">
+          <select id="referenceFilter">
+            <option value="">Todas as faturas</option>
+          </select>
+          <input type="text" id="searchInput" placeholder="Buscar..." class="search-input">
+          <select id="categoryFilter">
+            <option value="">Todas categorias</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="table-container">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>Banco</th>
+              <th>Fatura</th>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th class="text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="transactionsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Category Modal -->
+    <div class="modal" id="categoryModal">
+      <div class="modal-content">
+        <h3>Alterar Categoria</h3>
+        <p id="modalDescription"></p>
+        <select id="modalCategorySelect"></select>
+        <label class="checkbox-label">
+          <input type="checkbox" id="applyToAll">
+          Aplicar a todas transações similares
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveCategory()">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/categories.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/categorizer.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/ai-consultant.js"></script>
+</body>
+</html>

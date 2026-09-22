@@ -1,0 +1,30 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente (segredos - NUNCA versionar)
+.env
+.env.local
+.env.production
+backend/.env
+
+# Documentação interna / auxiliar (não faz parte do produto)
+.kiro/
+CONTEXTO-PROJETO.md
+GUIA-MULTI-PROVEDOR-IA.md
+
+# Arquivos de teste/exemplo
+exemplo-extrato.csv
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Logs e temporários
+*.log
+npm-debug.log*
+*.tmp
+*.bak
