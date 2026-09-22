@@ -1,5 +1,6 @@
-﻿// Testes de integraÃ§Ã£o para a API (supertest + Gemini mockado)
+﻿// Testes de integraÃ§Ã£o para a API (supertest + IA mockada)
 
+process.env.IA_PROVIDER = 'openai';
 process.env.OPENAI_API_KEY = 'chave-secreta-teste';
 process.env.NODE_ENV = 'test';
 process.env.CORS_ORIGIN = 'http://localhost:5500';

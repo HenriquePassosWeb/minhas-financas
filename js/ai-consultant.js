@@ -2,10 +2,9 @@
 // Monta o payload a partir das transações filtradas, chama o endpoint /api/analise
 // e renderiza a análise retornada pelo Gemini.
 
-// URL do backend: usa localhost em desenvolvimento, Render em produção
-const API_BASE_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3000'
-  : 'https://finance-app-passos.onrender.com';
+// URL do backend: vazio = mesma origem que serve o app (frontend e API juntos).
+// Funciona tanto local (servido pelo backend em :3000) quanto em produção (Render).
+const API_BASE_URL = '';
 
 // Monta o payload de análise a partir das transações filtradas (somente gastos)
 function montarPayloadAnalise(transacoes) {

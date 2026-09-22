@@ -1,5 +1,6 @@
 ﻿// Testes unitÃ¡rios e property-based para services/analiseService.js
 
+process.env.IA_PROVIDER = 'openai';
 process.env.OPENAI_API_KEY = 'chave-teste';
 process.env.NODE_ENV = 'test';
 

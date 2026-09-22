@@ -1,5 +1,6 @@
 ﻿// Testes unitÃ¡rios para middlewares/errorHandler.js
 
+process.env.IA_PROVIDER = 'openai';
 process.env.OPENAI_API_KEY = 'chave-teste';
 process.env.NODE_ENV = 'production';
 
