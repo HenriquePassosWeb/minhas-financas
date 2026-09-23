@@ -74,14 +74,32 @@ function montarPrompt(dados) {
   }
 
   linhas.push('');
-  linhas.push('## O que você deve entregar (em markdown, seções nesta ordem)');
-  linhas.push('1. **Resumo do mês** (2-3 frases sobre o panorama geral)');
-  linhas.push('2. **Onde o dinheiro foi** (destaque as 2-3 categorias que mais pesaram)');
-  linhas.push('3. **Alertas** (gastos elevados, possíveis assinaturas duplicadas ou recorrências caras)');
-  linhas.push('4. **Sugestões de economia** (3 a 5 dicas concretas e realistas)');
-  linhas.push('5. **Meta sugerida** (uma meta simples e atingível para o próximo mês)');
+  linhas.push('## O que você deve entregar');
+  linhas.push('Responda em MARKDOWN, com EXATAMENTE estas 5 seções, nesta ordem,');
+  linhas.push('cada uma começando com "## " e o emoji indicado:');
   linhas.push('');
-  linhas.push('Seja específico com os números fornecidos. Evite conselhos genéricos.');
+  linhas.push('## 📊 Resumo do mês');
+  linhas.push('2 a 3 frases sobre o panorama geral. Use **negrito** nos valores em R$.');
+  linhas.push('');
+  linhas.push('## 💸 Onde o dinheiro foi');
+  linhas.push('Apresente uma TABELA markdown com as colunas: Categoria | Valor | % do total | Transações.');
+  linhas.push('Ordene da maior para a menor. Depois, 1 frase de destaque começando com "> ".');
+  linhas.push('');
+  linhas.push('## ⚠️ Alertas');
+  linhas.push('Lista com "- " de gastos elevados, assinaturas duplicadas ou recorrências caras.');
+  linhas.push('');
+  linhas.push('## 💡 Sugestões de economia');
+  linhas.push('Lista com "- " de 3 a 5 dicas concretas e realistas, com valores estimados quando possível.');
+  linhas.push('');
+  linhas.push('## 🎯 Meta sugerida');
+  linhas.push('1 a 2 frases com uma meta simples e atingível para o próximo mês.');
+  linhas.push('');
+  linhas.push('REGRAS DE FORMATAÇÃO:');
+  linhas.push('- Sempre use "## " (dois hashtags e espaço) nos títulos das seções.');
+  linhas.push('- Use tabela markdown de verdade (com | e a linha separadora |---|).');
+  linhas.push('- Valores sempre no formato R$ 0.000,00.');
+  linhas.push('- Seja específico com os números fornecidos. Evite conselhos genéricos.');
+  linhas.push('- Não escreva nada fora dessas 5 seções.');
 
   return linhas.join('\n');
 }

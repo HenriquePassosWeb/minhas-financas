@@ -1212,30 +1212,124 @@ body {
 }
 
 .consultor-resultado {
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--gray-700);
+  font-size: 0.95rem;
 }
 
+/* Títulos das seções (1. Resumo, 2. Onde o dinheiro foi, etc.) */
 .consultor-resultado h3 {
-  color: var(--primary);
-  margin: 18px 0 8px;
-  font-size: 17px;
+  color: var(--primary-dark);
+  margin: 26px 0 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0e6f7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.consultor-resultado h3:first-child {
+  margin-top: 0;
 }
 
 .consultor-resultado h4 {
-  color: var(--primary-dark);
-  margin: 14px 0 6px;
-  font-size: 15px;
+  color: var(--primary);
+  margin: 18px 0 8px;
+  font-size: 0.98rem;
+  font-weight: 600;
 }
 
 .consultor-resultado p {
-  margin: 8px 0;
+  margin: 10px 0;
 }
 
+.consultor-resultado strong {
+  color: var(--gray-900);
+  font-weight: 700;
+}
+
+/* Listas com marcador customizado */
 .consultor-resultado ul {
-  margin: 8px 0 8px 20px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
 }
 
 .consultor-resultado li {
-  margin: 4px 0;
+  position: relative;
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.consultor-resultado li::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary-light);
+}
+
+/* Item numerado (quando a IA usa "1. texto" fora de título) */
+.consultor-resultado .item-numerado {
+  margin: 8px 0;
+  padding-left: 4px;
+}
+
+/* Tabela financeira */
+.consultor-resultado .tabela-wrap {
+  overflow-x: auto;
+  margin: 16px 0;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+}
+
+.consultor-resultado .ia-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.consultor-resultado .ia-tabela thead {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.consultor-resultado .ia-tabela th {
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 14px;
+  white-space: nowrap;
+}
+
+.consultor-resultado .ia-tabela td {
+  padding: 11px 14px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.consultor-resultado .ia-tabela tbody tr:nth-child(even) {
+  background: #faf7fc;
+}
+
+.consultor-resultado .ia-tabela tbody tr:hover {
+  background: #f3e8ff;
+}
+
+/* Destaque / citação (linhas com "> ...") */
+.consultor-resultado .ia-destaque {
+  margin: 16px 0;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border-left: 4px solid var(--primary);
+  border-radius: 0 10px 10px 0;
+  color: var(--gray-800);
+  font-size: 0.93rem;
+}
+
+.consultor-resultado .ia-destaque strong {
+  color: var(--primary-dark);
 }

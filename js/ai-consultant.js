@@ -159,11 +159,30 @@ function formatarInline(texto) {
   return t;
 }
 
-// Converte markdown simples para HTML (títulos, negrito, itálico, listas, parágrafos)
+// Verifica se a linha é a separadora de uma tabela markdown (ex: |---|---|)
+function ehSeparadorTabela(linha) {
+  return /^\|?[\s:|-]+\|?$/.test(linha) && linha.includes('-');
+}
+
+// Verifica se a linha parece uma linha de tabela markdown (tem pelo menos 1 pipe)
+function ehLinhaTabela(linha) {
+  return linha.includes('|');
+}
+
+// Divide uma linha de tabela em células, ignorando os pipes das bordas
+function dividirCelulas(linha) {
+  let l = linha.trim();
+  if (l.startsWith('|')) l = l.slice(1);
+  if (l.endsWith('|')) l = l.slice(0, -1);
+  return l.split('|').map((c) => c.trim());
+}
+
+// Converte markdown para HTML (títulos, negrito, itálico, listas, tabelas, citações)
 function renderMarkdown(texto) {
   const linhas = texto.split('\n');
   const html = [];
   let emLista = false;
+  let i = 0;
 
   const fecharLista = () => {
     if (emLista) {
@@ -172,12 +191,32 @@ function renderMarkdown(texto) {
     }
   };
 
-  linhas.forEach(linha => {
-    const l = linha.trim();
+  while (i < linhas.length) {
+    const l = linhas[i].trim();
 
     if (l === '') {
       fecharLista();
-      return;
+      i += 1;
+      continue;
+    }
+
+    // Tabela: linha atual tem pipe E a próxima é separadora (|---|---|)
+    if (ehLinhaTabela(l) && i + 1 < linhas.length && ehSeparadorTabela(linhas[i + 1].trim())) {
+      fecharLista();
+      const cabecalho = dividirCelulas(l);
+      const linhasCorpo = [];
+      i += 2; // pula cabeçalho e separador
+      while (i < linhas.length && linhas[i].trim() !== '' && ehLinhaTabela(linhas[i].trim())) {
+        linhasCorpo.push(dividirCelulas(linhas[i].trim()));
+        i += 1;
+      }
+      const th = cabecalho.map((c) => `<th>${formatarInline(c)}</th>`).join('');
+      const trs = linhasCorpo.map((linha) => {
+        const tds = linha.map((c) => `<td>${formatarInline(c)}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      html.push(`<div class="tabela-wrap"><table class="ia-tabela"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`);
+      continue;
     }
 
     if (l.startsWith('### ')) {
@@ -189,6 +228,10 @@ function renderMarkdown(texto) {
     } else if (l.startsWith('# ')) {
       fecharLista();
       html.push(`<h3>${formatarInline(l.slice(2))}</h3>`);
+    } else if (l.startsWith('> ')) {
+      // Citação / destaque
+      fecharLista();
+      html.push(`<blockquote class="ia-destaque">${formatarInline(l.slice(2))}</blockquote>`);
     } else if (l.startsWith('- ') || l.startsWith('* ')) {
       if (!emLista) {
         html.push('<ul>');
@@ -196,14 +239,14 @@ function renderMarkdown(texto) {
       }
       html.push(`<li>${formatarInline(l.slice(2))}</li>`);
     } else if (/^\d+\.\s/.test(l)) {
-      // Item numerado vira um parágrafo com destaque (mantém o número)
       fecharLista();
       html.push(`<p class="item-numerado">${formatarInline(l)}</p>`);
     } else {
       fecharLista();
       html.push(`<p>${formatarInline(l)}</p>`);
     }
-  });
+    i += 1;
+  }
 
   fecharLista();
   return html.join('');
