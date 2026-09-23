@@ -1,0 +1,90 @@
+-- ============================================================
+-- Minhas Financas - Schema e RLS para persistencia no Supabase
+-- Rodar no SQL Editor do Supabase (New query > colar > Run)
+-- ============================================================
+
+-- ============================================
+-- 1. TABELAS
+-- ============================================
+
+-- Tabela de transacoes
+CREATE TABLE IF NOT EXISTS public.transacoes (
+  id               uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          uuid         NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date             date         NOT NULL,
+  description      text         NOT NULL,
+  amount           numeric      NOT NULL,
+  category         text         NOT NULL,
+  type             text         NOT NULL,
+  bank             text         NOT NULL,
+  reference_month  text         NOT NULL,
+  reference_year   text         NOT NULL,
+  created_at       timestamptz  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_transacoes_user_id
+  ON public.transacoes (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_transacoes_fatura
+  ON public.transacoes (user_id, bank, reference_month, reference_year);
+
+-- Tabela de regras de categorizacao
+CREATE TABLE IF NOT EXISTS public.regras_categorizacao (
+  id             uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        uuid         NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  palavra_chave  text         NOT NULL,
+  category       text         NOT NULL,
+  created_at     timestamptz  NOT NULL DEFAULT now(),
+  CONSTRAINT uq_regra_usuario_palavra UNIQUE (user_id, palavra_chave)
+);
+
+CREATE INDEX IF NOT EXISTS idx_regras_user_id
+  ON public.regras_categorizacao (user_id);
+
+-- ============================================
+-- 2. ROW LEVEL SECURITY (RLS)
+-- ============================================
+
+ALTER TABLE public.transacoes            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.regras_categorizacao  ENABLE ROW LEVEL SECURITY;
+
+-- Politicas para transacoes
+CREATE POLICY "transacoes_select_own"
+  ON public.transacoes FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "transacoes_insert_own"
+  ON public.transacoes FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "transacoes_update_own"
+  ON public.transacoes FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "transacoes_delete_own"
+  ON public.transacoes FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Politicas para regras_categorizacao
+CREATE POLICY "regras_select_own"
+  ON public.regras_categorizacao FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "regras_insert_own"
+  ON public.regras_categorizacao FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "regras_update_own"
+  ON public.regras_categorizacao FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "regras_delete_own"
+  ON public.regras_categorizacao FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================
+-- FIM. Verifique no Table Editor se as tabelas
+-- transacoes e regras_categorizacao aparecem com RLS habilitado.
+-- ============================================

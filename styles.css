@@ -1333,3 +1333,43 @@ body {
 .consultor-resultado .ia-destaque strong {
   color: var(--primary-dark);
 }
+
+/* Overlay de carregamento */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(92, 0, 128, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-overlay.visivel {
+  display: flex;
+}
+
+.loading-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 36px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.loading-box p {
+  margin: 14px 0 0;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.loading-spinner-grande {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: consultor-girar 0.8s linear infinite;
+}

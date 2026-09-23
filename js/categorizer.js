@@ -106,29 +106,21 @@ const Categorizer = {
   // Regras personalizadas do usuário (persistidas)
   customRules: {},
 
-  // Carrega regras do localStorage
-  loadCustomRules() {
+  // Carrega regras do Supabase (com fallback de cache local)
+  async loadCustomRules() {
     try {
-      const saved = localStorage.getItem('customCategorizationRules');
-      if (saved) {
-        this.customRules = JSON.parse(saved);
-      }
+      this.customRules = await DB.carregarRegras();
     } catch (e) {
-      console.warn('Erro ao carregar regras customizadas:', e);
+      console.warn('Erro ao carregar regras do Supabase, usando cache:', e);
+      this.customRules = DB.lerCacheRegras() || {};
     }
   },
 
-  // Salva regra customizada
-  saveCustomRule(description, categoryId) {
-    // Normaliza a descrição
+  // Salva regra customizada no Supabase (mantém cache em memória atualizado)
+  async saveCustomRule(description, categoryId) {
     const key = this.normalizeText(description);
     this.customRules[key] = categoryId;
-    
-    try {
-      localStorage.setItem('customCategorizationRules', JSON.stringify(this.customRules));
-    } catch (e) {
-      console.warn('Erro ao salvar regras customizadas:', e);
-    }
+    await DB.salvarRegra(key, categoryId);
   },
 
   // Normaliza texto para comparação
@@ -178,10 +170,10 @@ const Categorizer = {
     return 'outros';
   },
 
-  // Categoriza lista de transações
+  // Categoriza lista de transações.
+  // As regras customizadas já estão em memória (carregadas no início da sessão
+  // via loadCustomRules e atualizadas ao salvar uma nova regra).
   categorizeAll(transactions) {
-    this.loadCustomRules();
-    
     return transactions.map(t => ({
       ...t,
       // Usa categoria do C6 se disponível, senão categoriza automaticamente

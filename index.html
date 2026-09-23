@@ -12,6 +12,14 @@
   <script src="js/auth-guard.js"></script>
 </head>
 <body>
+  <!-- Overlay de carregamento -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-box">
+      <span class="loading-spinner-grande"></span>
+      <p>Carregando seus dados...</p>
+    </div>
+  </div>
+
   <div class="app">
     <!-- Header -->
     <header class="header">
@@ -240,6 +248,7 @@
     </div>
   </div>
 
+  <script src="js/db.js"></script>
   <script src="js/categories.js"></script>
   <script src="js/parser.js"></script>
   <script src="js/categorizer.js"></script>

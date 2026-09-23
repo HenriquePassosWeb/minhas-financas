@@ -13,9 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
   populateCategoryFilter();
   populateModalCategories();
   
-  // Carrega dados salvos
+  // Carrega dados do usuário (Supabase)
   loadSavedData();
 });
+
+// Exibe/oculta o overlay de carregamento
+function showLoading() {
+  document.getElementById('loadingOverlay').classList.add('visivel');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('visivel');
+}
+
+// Traduz um erro de domínio (db.js) em mensagem amigável
+function mensagemDeErro(erro) {
+  if (erro instanceof DB.ESessaoAusente) {
+    return 'Sua sessão expirou. Faça login novamente.';
+  }
+  if (erro instanceof DB.EFalhaDeRede) {
+    return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.';
+  }
+  return 'Não foi possível concluir a operação. Tente novamente.';
+}
 
 // Configura filtro de período principal
 function setupPeriodFilter() {
@@ -170,7 +190,7 @@ function processFile(file) {
   
   const reader = new FileReader();
   
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const content = e.target.result;
       
@@ -213,18 +233,10 @@ function processFile(file) {
         alert('Todas as transações deste arquivo já foram importadas.');
         return;
       }
-      
-      transactions = [...transactions, ...newTransactions];
-      filteredTransactions = [...transactions];
-      
-      // Salva no localStorage
-      saveData();
-      
-      // Atualiza UI
-      showResults();
-      
-      alert(`${newTransactions.length} transações importadas para a fatura de ${reference.month}/${reference.year}`);
-      
+
+      // Persiste no Supabase (com retry em caso de falha)
+      await persistirImportacao(newTransactions, reference);
+
     } catch (error) {
       console.error('Erro ao processar arquivo:', error);
       alert('Erro ao processar arquivo: ' + error.message + '\n\nVerifique o console (F12) para mais detalhes.');
@@ -232,6 +244,28 @@ function processFile(file) {
   };
   
   reader.readAsText(file, 'UTF-8');
+}
+
+// Persiste as transações importadas no Supabase, com opção de retry em falha
+async function persistirImportacao(newTransactions, reference) {
+  showLoading();
+  try {
+    const inseridas = await DB.inserirTransacoes(newTransactions);
+    // Usa as transações com id retornado pelo banco
+    transactions = [...transactions, ...inseridas];
+    filteredTransactions = [...transactions];
+    DB.gravarCacheTransacoes(transactions);
+    showResults();
+    alert(`${inseridas.length} transações importadas para a fatura de ${reference.month}/${reference.year}`);
+  } catch (erro) {
+    console.error('Falha ao salvar importação:', erro);
+    const tentarNovamente = confirm(mensagemDeErro(erro) + '\n\nDeseja tentar novamente?');
+    if (tentarNovamente) {
+      await persistirImportacao(newTransactions, reference);
+    }
+  } finally {
+    hideLoading();
+  }
 }
 
 // Mostra resultados
@@ -445,25 +479,33 @@ function confirmDeleteFatura(bank, period) {
 }
 
 // Exclui fatura (todas as transações daquele banco/período)
-function deleteFatura(bank, period) {
-  // Remove transações
-  transactions = transactions.filter(t => 
+// Só remove da tela após a confirmação da exclusão no Supabase.
+async function deleteFatura(bank, period) {
+  const [referenceMonth, referenceYear] = period.split('/');
+  showLoading();
+  try {
+    await DB.excluirTransacoesDaFatura(bank, referenceMonth, referenceYear);
+  } catch (erro) {
+    console.error('Falha ao excluir fatura:', erro);
+    alert(mensagemDeErro(erro) + '\n\nA fatura foi mantida.');
+    return; // mantém a fatura visível
+  } finally {
+    hideLoading();
+  }
+
+  // Sucesso confirmado: remove do estado em memória
+  transactions = transactions.filter(t =>
     !(t.bank === bank && `${t.referenceMonth}/${t.referenceYear}` === period)
   );
-  
-  // Atualiza filtradas
-  filteredTransactions = transactions.filter(t => 
+  filteredTransactions = transactions.filter(t =>
     t.type === 'expense' && t.category !== 'pagamento_fatura'
   );
-  
-  // Salva
-  saveData();
-  
+  DB.gravarCacheTransacoes(transactions);
+
   // Atualiza UI
   if (transactions.length > 0) {
     showResults();
   } else {
-    // Se não tem mais dados, esconde tudo
     document.getElementById('periodFilterSection').style.display = 'none';
     document.getElementById('summarySection').style.display = 'none';
     document.getElementById('bankSummarySection').style.display = 'none';
@@ -749,78 +791,135 @@ function closeModal() {
 }
 
 // Salva categoria
-function saveCategory() {
+async function saveCategory() {
   if (!selectedTransaction) return;
-  
+
   const newCategory = document.getElementById('modalCategorySelect').value;
   const applyToAll = document.getElementById('applyToAll').checked;
-  
-  if (applyToAll) {
-    // Aplica a todas transações com descrição similar
-    const normalizedDesc = Categorizer.normalizeText(selectedTransaction.description);
-    
-    transactions.forEach(t => {
-      if (Categorizer.normalizeText(t.description) === normalizedDesc) {
-        t.category = newCategory;
+  const alvo = selectedTransaction;
+
+  showLoading();
+  try {
+    if (applyToAll) {
+      // Transações com descrição similar
+      const normalizedDesc = Categorizer.normalizeText(alvo.description);
+      const similares = transactions.filter(t =>
+        Categorizer.normalizeText(t.description) === normalizedDesc
+      );
+
+      // Atualiza cada uma no Supabase
+      for (const t of similares) {
+        await DB.atualizarCategoriaTransacao(t.id, newCategory);
       }
-    });
-    
-    // Salva regra para futuras importações
-    Categorizer.saveCustomRule(selectedTransaction.description, newCategory);
-    
-  } else {
-    // Aplica só a essa transação
-    const original = transactions.find(t => t.id === selectedTransaction.id);
-    if (original) {
-      original.category = newCategory;
+      // Salva a regra para futuras importações
+      await Categorizer.saveCustomRule(alvo.description, newCategory);
+
+      // Atualiza em memória após sucesso
+      similares.forEach(t => { t.category = newCategory; });
+    } else {
+      // Apenas essa transação
+      await DB.atualizarCategoriaTransacao(alvo.id, newCategory);
+      const original = transactions.find(t => t.id === alvo.id);
+      if (original) {
+        original.category = newCategory;
+      }
     }
+
+    // Ressincroniza filteredTransactions com o estado atualizado
+    filteredTransactions = filteredTransactions.map(t => {
+      const original = transactions.find(o => o.id === t.id);
+      return original || t;
+    });
+
+    DB.gravarCacheTransacoes(transactions);
+    showResults();
+    closeModal();
+  } catch (erro) {
+    console.error('Falha ao salvar categoria:', erro);
+    alert(mensagemDeErro(erro));
+  } finally {
+    hideLoading();
   }
-  
-  // Atualiza filteredTransactions
-  filteredTransactions = filteredTransactions.map(t => {
-    const original = transactions.find(o => o.id === t.id);
-    return original || t;
-  });
-  
-  saveData();
-  showResults();
-  closeModal();
 }
 
-// Salva dados no localStorage
-function saveData() {
+// Migração única do localStorage legado para o Supabase (primeiro login pós-atualização)
+async function migrarLocalStorageSeNecessario() {
+  const FLAG = 'supabaseMigracaoConcluida';
+  if (localStorage.getItem(FLAG) === 'true') {
+    return; // já migrado
+  }
+
+  // Lê dados legados (formato antigo do localStorage)
+  let legadoTransacoes = [];
+  let legadoRegras = {};
   try {
-    const data = transactions.map(t => ({
-      ...t,
-      date: t.date.toISOString()
-    }));
-    localStorage.setItem('financasTransactions', JSON.stringify(data));
+    const brutoT = localStorage.getItem('financasTransactions');
+    if (brutoT) {
+      legadoTransacoes = JSON.parse(brutoT)
+        .filter(t => !t.id) // só migra o que ainda não veio do banco
+        .map(t => ({ ...t, date: new Date(t.date) }));
+    }
+    const brutoR = localStorage.getItem('customCategorizationRules');
+    if (brutoR) {
+      legadoRegras = JSON.parse(brutoR);
+    }
   } catch (e) {
-    console.warn('Erro ao salvar dados:', e);
+    return; // dados legados corrompidos: ignora
   }
+
+  if (legadoTransacoes.length === 0 && Object.keys(legadoRegras).length === 0) {
+    localStorage.setItem(FLAG, 'true'); // nada a migrar
+    return;
+  }
+
+  // Envia ao Supabase
+  if (legadoTransacoes.length > 0) {
+    await DB.inserirTransacoes(legadoTransacoes);
+  }
+  for (const [palavra, categoria] of Object.entries(legadoRegras)) {
+    await DB.salvarRegra(palavra, categoria);
+  }
+
+  // Marca como concluída (idempotência)
+  localStorage.setItem(FLAG, 'true');
 }
 
-// Carrega dados salvos
-function loadSavedData() {
+// Carrega os dados do usuário a partir do Supabase (com fallback de cache local)
+async function loadSavedData() {
+  showLoading();
   try {
-    const saved = localStorage.getItem('financasTransactions');
-    if (saved) {
-      transactions = JSON.parse(saved).map(t => ({
-        ...t,
-        date: new Date(t.date)
-      }));
-      
-      // Filtra só gastos
-      filteredTransactions = transactions.filter(t => 
+    // Migração única de dados legados (best-effort, não bloqueia o fluxo)
+    try {
+      await migrarLocalStorageSeNecessario();
+    } catch (erroMigracao) {
+      console.warn('Falha na migração do localStorage (dados legados preservados):', erroMigracao);
+    }
+
+    // Carrega regras de categorização e transações da nuvem
+    await Categorizer.loadCustomRules();
+    transactions = await DB.carregarTransacoes();
+
+    filteredTransactions = transactions.filter(t =>
+      t.type === 'expense' && t.category !== 'pagamento_fatura'
+    );
+
+    if (transactions.length > 0) {
+      showResults();
+    }
+  } catch (erro) {
+    console.warn('Falha ao carregar do Supabase:', erro);
+    // Fallback: usa o cache local para permitir uso parcial
+    const cache = DB.lerCacheTransacoes();
+    if (cache && cache.length > 0) {
+      transactions = cache;
+      filteredTransactions = transactions.filter(t =>
         t.type === 'expense' && t.category !== 'pagamento_fatura'
       );
-      
-      if (transactions.length > 0) {
-        showResults();
-      }
+      showResults();
     }
-  } catch (e) {
-    console.warn('Erro ao carregar dados:', e);
+    alert(mensagemDeErro(erro) + '\n\nExibindo dados locais quando disponíveis.');
+  } finally {
+    hideLoading();
   }
 }
 
