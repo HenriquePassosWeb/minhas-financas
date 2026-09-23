@@ -1,0 +1,37 @@
+name: Testes
+
+# Roda os testes automaticamente a cada push e pull request na branch main
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # --- Testes do frontend (raiz) ---
+      - name: Instalar dependências do frontend
+        run: npm install
+
+      - name: Rodar testes do frontend
+        run: npm test
+
+      # --- Testes do backend ---
+      - name: Instalar dependências do backend
+        run: npm install
+        working-directory: backend
+
+      - name: Rodar testes do backend
+        run: npm test
+        working-directory: backend

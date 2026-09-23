@@ -192,3 +192,8 @@ const Categorizer = {
     return transaction;
   }
 };
+
+// Export para testes em Node (ignorado no navegador)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { Categorizer };
+}

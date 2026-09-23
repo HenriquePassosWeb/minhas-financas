@@ -291,3 +291,16 @@ const DB = {
     }
   }
 };
+
+// Export para testes em Node (ignorado no navegador)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    DB,
+    paraLinha,
+    paraTransacao,
+    traduzirErro,
+    ESessaoAusente,
+    EFalhaDeRede,
+    EFalhaSupabase
+  };
+}
