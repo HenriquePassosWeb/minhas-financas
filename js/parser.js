@@ -363,20 +363,21 @@ const CSVParser = {
     
     dateStr = dateStr.trim();
     
+    // YYYY-MM-DD (ISO) - verificado antes do formato DD/MM/YYYY para evitar
+    // que o regex de dia/mês capture o ano de 4 dígitos como se fosse o dia.
+    let match = dateStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (match) {
+      const [_, year, month, day] = match;
+      return new Date(year, month - 1, day);
+    }
+    
     // DD/MM/YYYY ou DD-MM-YYYY
-    let match = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    match = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
     if (match) {
       let [_, day, month, year] = match;
       if (year.length === 2) {
         year = '20' + year;
       }
-      return new Date(year, month - 1, day);
-    }
-    
-    // YYYY-MM-DD
-    match = dateStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
-    if (match) {
-      const [_, year, month, day] = match;
       return new Date(year, month - 1, day);
     }
     
@@ -427,3 +428,8 @@ const CSVParser = {
     return isNegative ? -value : value;
   }
 };
+
+// Export para testes em Node (ignorado no navegador)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CSVParser };
+}
