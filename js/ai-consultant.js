@@ -81,6 +81,48 @@ function renderizarAnalise(content, textoAnalise, salva, geradoEm) {
     </div>`;
 }
 
+// Placeholder padrão (quando não há análise salva para o período)
+function renderPlaceholderConsultor() {
+  const content = document.getElementById('consultorContent');
+  content.innerHTML = `
+    <div class="consultor-placeholder">
+      <p>Clique em <strong>"Analisar gastos"</strong> para receber insights personalizados sobre suas finanças.</p>
+      <ul class="consultor-features">
+        <li>📊 Análise de padrões de consumo</li>
+        <li>💡 Sugestões de economia</li>
+        <li>📈 Comparativo entre períodos</li>
+        <li>⚠️ Alertas de gastos elevados</li>
+        <li>🎯 Dicas para atingir metas</li>
+      </ul>
+    </div>`;
+}
+
+// Verifica se há análise salva para o período atual e a exibe automaticamente.
+// Se não houver, mostra o placeholder (usuário clica em "Analisar").
+async function carregarAnaliseSalva() {
+  const content = document.getElementById('consultorContent');
+  const dados = montarPayloadAnalise(filteredTransactions);
+
+  // Sem dados importados: mantém o placeholder
+  if (!dados.categorias.length) {
+    renderPlaceholderConsultor();
+    return;
+  }
+
+  const periodo = dados.periodo || '';
+  try {
+    const salva = await DB.carregarAnalise(periodo);
+    if (salva && salva.analise) {
+      renderizarAnalise(content, salva.analise, true, salva.geradoEm);
+    } else {
+      renderPlaceholderConsultor();
+    }
+  } catch (e) {
+    console.warn('Falha ao carregar análise salva:', e);
+    renderPlaceholderConsultor();
+  }
+}
+
 // Aciona a análise pela IA.
 // forcarNova = true ignora a análise salva e gera uma nova (gasta 1 requisição).
 async function analyzeWithAI(forcarNova) {

@@ -72,6 +72,11 @@ function applyPeriodFilter() {
   renderTopExpenses();
   renderGroupedExpenses();
   renderTransactions();
+
+  // Busca a análise salva para o período selecionado (se houver)
+  if (typeof carregarAnaliseSalva === 'function') {
+    carregarAnaliseSalva();
+  }
   
   // Sincroniza com o filtro da tabela
   document.getElementById('referenceFilter').value = selectedPeriod;
@@ -303,6 +308,11 @@ function showResults() {
   
   // Atualiza tabela
   renderTransactions();
+
+  // Busca e exibe automaticamente a análise salva do período (se houver)
+  if (typeof carregarAnaliseSalva === 'function') {
+    carregarAnaliseSalva();
+  }
 }
 
 // Atualiza o filtro de período principal
