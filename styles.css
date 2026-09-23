@@ -45,6 +45,8 @@ body {
 .header h1 {
   font-size: 2.5rem;
   margin-bottom: 8px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .subtitle {
@@ -1145,6 +1147,10 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .header {
+    padding: 28px 16px;
+  }
+
   .header h1 {
     font-size: 1.8rem;
   }
@@ -1171,6 +1177,25 @@ body {
    Mantem a descricao completa (sem cortar) e escala fontes/paddings
    para caber mais informacao sem apertar, no estilo de apps de banco. */
 @media (max-width: 480px) {
+  /* Cabecalho: reduz a fonte do nome do app para caber em uma linha
+     ao lado do botao Sair, sem cortar o texto. */
+  .header {
+    padding: 22px 14px;
+  }
+
+  .header h1 {
+    font-size: 1.4rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .btn-logout {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
   /* Cards de secao com menos padding lateral aproveitam melhor a largura */
   .card {
     padding: 16px;
@@ -1302,12 +1327,18 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .header-top > div {
   text-align: left;
+  min-width: 0;
+}
+
+.btn-logout {
+  flex-shrink: 0;
 }
 
 .btn-logout {
