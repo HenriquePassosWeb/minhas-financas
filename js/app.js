@@ -595,70 +595,118 @@ function renderTopExpenses() {
 // Renderiza gastos agrupados por estabelecimento
 function renderGroupedExpenses() {
   const container = document.getElementById('groupedExpensesList');
-  
-  // Agrupa por descrição (nome do estabelecimento)
-  const grouped = {};
-  
-  filteredTransactions
-    .filter(t => t.type === 'expense' && t.category !== 'pagamento_fatura')
-    .forEach(t => {
-      const key = t.description.toLowerCase().trim();
-      if (!grouped[key]) {
-        grouped[key] = {
-          name: t.description,
-          category: t.category,
-          transactions: [],
-          total: 0
-        };
-      }
-      grouped[key].transactions.push(t);
-      grouped[key].total += Math.abs(t.amount);
-    });
-  
-  // Converte para array e ordena por total (maior primeiro)
-  const sortedGroups = Object.values(grouped)
-    .sort((a, b) => b.total - a.total);
-  
-  container.innerHTML = sortedGroups.map((group, idx) => {
-    const cat = getCategory(group.category);
-    const transactionsList = group.transactions
-      .sort((a, b) => b.date - a.date)
-      .map(t => `
-        <div class="grouped-transaction">
-          <span class="grouped-transaction-date">${formatDate(t.date)}</span>
-          <span class="grouped-transaction-value">- ${formatCurrency(Math.abs(t.amount))}</span>
-        </div>
-      `).join('');
-    
-    return `
-      <div class="grouped-item" onclick="toggleGroupedItem(${idx})">
-        <div class="grouped-item-info">
-          <div class="grouped-item-icon" style="background: ${cat.bgColor}">
-            ${cat.icon}
-          </div>
-          <div class="grouped-item-details">
-            <div class="grouped-item-name">${group.name}</div>
-            <div class="grouped-item-meta">
-              <span>${cat.name}</span>
-              <span>${group.transactions.length} transação(ões)</span>
+
+  const gastos = filteredTransactions
+    .filter(t => t.type === 'expense' && t.category !== 'pagamento_fatura');
+
+  // Total geral (para calcular o % de cada categoria)
+  const totalGeral = gastos.reduce((soma, t) => soma + Math.abs(t.amount), 0);
+
+  // 1) Agrupa por estabelecimento (descrição), guardando a categoria
+  const porEstabelecimento = {};
+  gastos.forEach(t => {
+    const key = t.description.toLowerCase().trim();
+    if (!porEstabelecimento[key]) {
+      porEstabelecimento[key] = {
+        name: t.description,
+        category: t.category,
+        transactions: [],
+        total: 0
+      };
+    }
+    porEstabelecimento[key].transactions.push(t);
+    porEstabelecimento[key].total += Math.abs(t.amount);
+  });
+
+  // 2) Agrupa os estabelecimentos por categoria
+  const porCategoria = {};
+  Object.values(porEstabelecimento).forEach(est => {
+    if (!porCategoria[est.category]) {
+      porCategoria[est.category] = { category: est.category, estabelecimentos: [], total: 0 };
+    }
+    porCategoria[est.category].estabelecimentos.push(est);
+    porCategoria[est.category].total += est.total;
+  });
+
+  // Ordena categorias por total (maior primeiro)
+  const categoriasOrdenadas = Object.values(porCategoria).sort((a, b) => b.total - a.total);
+
+  if (categoriasOrdenadas.length === 0) {
+    container.innerHTML = '<p style="color: var(--gray-500); text-align: center;">Nenhum gasto no período.</p>';
+    return;
+  }
+
+  let idxEst = 0; // índice global dos estabelecimentos (para o toggle)
+
+  container.innerHTML = categoriasOrdenadas.map((grupoCat, idxCat) => {
+    const cat = getCategory(grupoCat.category);
+    const pct = totalGeral > 0 ? Math.round((grupoCat.total / totalGeral) * 100) : 0;
+
+    // Estabelecimentos da categoria, ordenados por valor
+    const estabelecimentosHtml = grupoCat.estabelecimentos
+      .sort((a, b) => b.total - a.total)
+      .map(est => {
+        const idAtual = idxEst++;
+        const transacoesHtml = est.transactions
+          .sort((a, b) => b.date - a.date)
+          .map(t => `
+            <div class="grouped-transaction">
+              <span class="grouped-transaction-date">${formatDate(t.date)}</span>
+              <span class="grouped-transaction-value">- ${formatCurrency(Math.abs(t.amount))}</span>
+            </div>
+          `).join('');
+
+        return `
+          <div class="grouped-item" onclick="toggleGroupedItem(${idAtual})">
+            <div class="grouped-item-info">
+              <div class="grouped-item-details">
+                <div class="grouped-item-name">${est.name}</div>
+                <div class="grouped-item-meta">
+                  <span>${est.transactions.length} transação(ões)</span>
+                </div>
+              </div>
+            </div>
+            <div class="grouped-item-values">
+              <div class="grouped-item-total">- ${formatCurrency(est.total)}</div>
             </div>
           </div>
+          <div class="grouped-item-transactions" id="grouped-${idAtual}">
+            ${transacoesHtml}
+          </div>
+        `;
+      }).join('');
+
+    return `
+      <div class="categoria-grupo">
+        <div class="categoria-header" onclick="toggleCategoria(${idxCat})">
+          <div class="categoria-header-info">
+            <div class="categoria-header-icon" style="background: ${cat.bgColor}">${cat.icon}</div>
+            <div>
+              <div class="categoria-header-nome">${cat.name}</div>
+              <div class="categoria-header-meta">${grupoCat.estabelecimentos.length} estabelecimento(s) · ${pct}% do total</div>
+            </div>
+          </div>
+          <div class="categoria-header-total">- ${formatCurrency(grupoCat.total)}</div>
         </div>
-        <div class="grouped-item-values">
-          <div class="grouped-item-total">- ${formatCurrency(group.total)}</div>
+        <div class="categoria-estabelecimentos" id="categoria-${idxCat}">
+          ${estabelecimentosHtml}
         </div>
-      </div>
-      <div class="grouped-item-transactions" id="grouped-${idx}">
-        ${transactionsList}
       </div>
     `;
   }).join('');
 }
 
-// Expande/colapsa detalhes do grupo
+// Expande/colapsa detalhes de um estabelecimento (transações)
 function toggleGroupedItem(idx) {
   const details = document.getElementById(`grouped-${idx}`);
-  details.classList.toggle('show');
+  if (details) details.classList.toggle('show');
+  event.stopPropagation();
+}
+
+// Expande/colapsa uma categoria inteira
+function toggleCategoria(idx) {
+  const grupo = document.getElementById(`categoria-${idx}`);
+  if (grupo) grupo.classList.toggle('recolhido');
 }
 
 // Renderiza tabela de transações
