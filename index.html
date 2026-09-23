@@ -79,10 +79,10 @@
       </div>
       
       <div class="upload-area" id="uploadArea">
-        <input type="file" id="fileInput" accept=".csv" hidden>
+        <input type="file" id="fileInput" accept=".csv,text/csv,text/comma-separated-values,application/csv,application/vnd.ms-excel" hidden>
         <div class="upload-content">
           <span class="upload-icon">📄</span>
-          <p>Arraste o arquivo CSV aqui ou <button class="btn-link" onclick="document.getElementById('fileInput').click()">clique para selecionar</button></p>
+          <p>Arraste o arquivo CSV aqui ou <button type="button" class="btn-link">clique para selecionar</button></p>
           <small>Após selecionar o banco acima, importe o arquivo CSV da fatura</small>
         </div>
       </div>
