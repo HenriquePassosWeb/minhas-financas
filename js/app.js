@@ -672,9 +672,11 @@ function renderTransactions() {
     const reference = t.referenceMonth && t.referenceYear 
       ? `${t.referenceMonth}/${t.referenceYear}` 
       : '-';
+    const bankName = getBankDisplayName(t.bank || 'generic');
     
     return `
       <tr>
+        <td>${bankName}</td>
         <td><span class="reference-badge">${reference}</span></td>
         <td>${formatDate(t.date)}</td>
         <td>${t.description}</td>
