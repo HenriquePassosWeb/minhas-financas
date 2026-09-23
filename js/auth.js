@@ -56,7 +56,10 @@ function traduzirErro(mensagem) {
     'Email not confirmed': 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.',
     'User already registered': 'Este email já está cadastrado.',
     'Password should be at least 6 characters': 'A senha deve ter pelo menos 6 caracteres.',
-    'Unable to validate email address: invalid format': 'Formato de email inválido.'
+    'Unable to validate email address: invalid format': 'Formato de email inválido.',
+    'Error sending confirmation email': 'Não foi possível enviar o email de confirmação no momento. Tente novamente em alguns minutos.',
+    'Email rate limit exceeded': 'Muitas tentativas de envio de email. Aguarde alguns minutos e tente novamente.',
+    'Signup requires a valid password': 'Informe uma senha válida.'
   };
   return mapa[mensagem] || mensagem;
 }
