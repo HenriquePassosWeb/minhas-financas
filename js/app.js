@@ -163,8 +163,16 @@ function setupUpload() {
     if (file) processFile(file);
   });
   
-  // Click para selecionar
-  uploadArea.addEventListener('click', () => fileInput.click());
+  // Click para selecionar. Um único ponto de abertura do seletor evita o
+  // duplo disparo (botão + área) que trava o file picker em navegadores mobile.
+  const abrirSeletor = () => {
+    // Reseta o valor para permitir reimportar o mesmo arquivo e evitar estados
+    // travados do input em alguns navegadores mobile.
+    fileInput.value = '';
+    fileInput.click();
+  };
+
+  uploadArea.addEventListener('click', abrirSeletor);
   
   fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -188,7 +196,7 @@ function processFile(file) {
     return;
   }
   
-  if (!file.name.endsWith('.csv')) {
+  if (!file.name.toLowerCase().endsWith('.csv')) {
     alert('Por favor, selecione um arquivo CSV');
     return;
   }
