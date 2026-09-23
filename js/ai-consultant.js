@@ -66,8 +66,24 @@ function montarPayloadAnalise(transacoes) {
   };
 }
 
-// Aciona a análise pela IA
-async function analyzeWithAI() {
+// Renderiza a análise com um rodapé indicando origem e botão de gerar nova
+function renderizarAnalise(content, textoAnalise, salva, geradoEm) {
+  const dataTxt = geradoEm ? new Date(geradoEm).toLocaleString('pt-BR') : '';
+  const origem = salva
+    ? `<span class="analise-origem">📁 Análise salva${dataTxt ? ' em ' + dataTxt : ''}</span>`
+    : `<span class="analise-origem">✨ Análise gerada agora</span>`;
+
+  content.innerHTML = `
+    <div class="consultor-resultado">${renderMarkdown(textoAnalise)}</div>
+    <div class="analise-rodape">
+      ${origem}
+      <button class="btn-gerar-nova" onclick="analyzeWithAI(true)">🔄 Gerar nova análise</button>
+    </div>`;
+}
+
+// Aciona a análise pela IA.
+// forcarNova = true ignora a análise salva e gera uma nova (gasta 1 requisição).
+async function analyzeWithAI(forcarNova) {
   const btn = document.getElementById('btnAnalyze');
   const content = document.getElementById('consultorContent');
 
@@ -80,6 +96,22 @@ async function analyzeWithAI() {
 
   // Garante que o card esteja expandido para mostrar o resultado
   document.getElementById('consultorSection').classList.remove('recolhido');
+
+  const periodo = dados.periodo || '';
+
+  // Se não for forçar nova, tenta reaproveitar a análise salva (0 requisições)
+  if (!forcarNova) {
+    try {
+      const salva = await DB.carregarAnalise(periodo);
+      if (salva && salva.analise) {
+        renderizarAnalise(content, salva.analise, true, salva.geradoEm);
+        return;
+      }
+    } catch (e) {
+      // Se falhar ao consultar o cache, segue para gerar normalmente
+      console.warn('Falha ao carregar análise salva:', e);
+    }
+  }
 
   btn.disabled = true;
   const pararLoading = iniciarLoading(content);
@@ -98,7 +130,15 @@ async function analyzeWithAI() {
       return;
     }
 
-    content.innerHTML = `<div class="consultor-resultado">${renderMarkdown(json.analise)}</div>`;
+    // Salva a análise gerada (best-effort; não bloqueia a exibição)
+    try {
+      const modelo = json.meta ? json.meta.modelo : null;
+      await DB.salvarAnalise(periodo, json.analise, modelo);
+    } catch (e) {
+      console.warn('Falha ao salvar análise:', e);
+    }
+
+    renderizarAnalise(content, json.analise, false, null);
   } catch (erro) {
     content.innerHTML = '<p class="consultor-erro">Não foi possível conectar ao serviço de análise. Tente novamente em instantes.</p>';
   } finally {

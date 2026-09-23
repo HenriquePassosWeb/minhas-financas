@@ -208,6 +208,48 @@ const DB = {
     }
   },
 
+  // ---- Análises do consultor IA ----
+
+  // Carrega a análise salva para um período (ou null se não houver).
+  async carregarAnalise(periodo) {
+    const userId = await this.obterUserId();
+    const { data, error } = await supabaseClient
+      .from('analises')
+      .select('analise, modelo, gerado_em')
+      .eq('user_id', userId)
+      .eq('periodo', periodo || '')
+      .maybeSingle();
+
+    if (error) {
+      throw traduzirErro(error);
+    }
+    if (!data) {
+      return null;
+    }
+    return { analise: data.analise, modelo: data.modelo, geradoEm: data.gerado_em };
+  },
+
+  // Salva (upsert) a análise de um período. Substitui a anterior do mesmo período.
+  async salvarAnalise(periodo, analise, modelo) {
+    const userId = await this.obterUserId();
+    const { error } = await supabaseClient
+      .from('analises')
+      .upsert(
+        {
+          user_id: userId,
+          periodo: periodo || '',
+          analise: analise,
+          modelo: modelo || null,
+          gerado_em: new Date().toISOString()
+        },
+        { onConflict: 'user_id,periodo' }
+      );
+
+    if (error) {
+      throw traduzirErro(error);
+    }
+  },
+
   // ---- Cache de fallback (leitura) ----
 
   lerCacheTransacoes() {

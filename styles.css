@@ -1373,3 +1373,40 @@ body {
   border-radius: 50%;
   animation: consultor-girar 0.8s linear infinite;
 }
+
+/* Rodapé da análise (origem + botão gerar nova) */
+.analise-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.analise-origem {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+}
+
+.btn-gerar-nova {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--primary-light);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-gerar-nova:hover {
+  background: var(--primary);
+  color: #fff;
+}

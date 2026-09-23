@@ -1,0 +1,44 @@
+-- ============================================================
+-- Minhas Financas - Tabela de analises do Consultor IA
+-- Rodar no SQL Editor do Supabase (New query > colar > Run)
+-- ============================================================
+
+-- Guarda a ULTIMA analise por usuario + periodo (upsert).
+-- periodo no formato "MM/AAAA" (ou vazio para "todos os meses").
+CREATE TABLE IF NOT EXISTS public.analises (
+  id          uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid         NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  periodo     text         NOT NULL,
+  analise     text         NOT NULL,
+  modelo      text,
+  gerado_em   timestamptz  NOT NULL DEFAULT now(),
+  CONSTRAINT uq_analise_usuario_periodo UNIQUE (user_id, periodo)
+);
+
+CREATE INDEX IF NOT EXISTS idx_analises_user_id
+  ON public.analises (user_id);
+
+-- RLS
+ALTER TABLE public.analises ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "analises_select_own"
+  ON public.analises FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "analises_insert_own"
+  ON public.analises FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "analises_update_own"
+  ON public.analises FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "analises_delete_own"
+  ON public.analises FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================================
+-- FIM. Verifique no Table Editor se a tabela "analises"
+-- aparece com RLS habilitado.
+-- ============================================================
